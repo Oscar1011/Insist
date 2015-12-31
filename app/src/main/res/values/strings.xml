@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">Insist</string>
     <string name="action_settings">Settings</string>
+    <string name="title">标题</string>
+    <string name="create">创建</string>
 </resources>
