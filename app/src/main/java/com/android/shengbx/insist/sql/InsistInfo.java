@@ -4,17 +4,17 @@ package com.android.shengbx.insist.sql;
  * Created by shengbx on 1/8/16.
  */
 public class InsistInfo {
-    private int id;
+    private long id;
     private String title;
-    private int type;
-    private int dayLongest;
-    private int dayNow;
+    private int type = 0;
+    private int dayLongest = 0;
+    private int dayNow = 0;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

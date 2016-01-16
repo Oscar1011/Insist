@@ -22,6 +22,7 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.android.shengbx.insist.sql.DataBaseHelper;
 import com.android.shengbx.insist.sql.InsistInfo;
@@ -60,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements Loader.OnLoadComp
                 }
                 mWritableDB.update(DataBaseHelper.TABLE_NAME,values,DataBaseHelper._ID+"=?",new String[]{String.valueOf(item.getId())});
                 mAdapter.notifyDataSetChanged();
+                Toast.makeText(getApplicationContext(), R.string.sign_successful,Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -87,8 +89,9 @@ public class MainActivity extends AppCompatActivity implements Loader.OnLoadComp
                         InsistInfo item = new InsistInfo();
                         item.setTitle(et_title.getText().toString());
                         ContentValues values = new ContentValues();
-                        values.put(DataBaseHelper.TITLE,et_title.getText().toString());
-                        mWritableDB.insert(DataBaseHelper.TABLE_NAME,null,values);
+                        values.put(DataBaseHelper.TITLE, et_title.getText().toString());
+                        long id = mWritableDB.insert(DataBaseHelper.TABLE_NAME, null, values);
+                        item.setId(id);
                         mAdapter.add(item);
                         mAdapter.notifyDataSetChanged();
                     }
