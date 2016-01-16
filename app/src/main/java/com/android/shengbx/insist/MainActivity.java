@@ -1,29 +1,38 @@
 package com.android.shengbx.insist;
 
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Loader;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Adapter;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.Spinner;
 
-import java.util.zip.Inflater;
+import com.android.shengbx.insist.sql.DataBaseHelper;
+import com.android.shengbx.insist.sql.InsistInfo;
 
-public class MainActivity extends AppCompatActivity {
-    GridView grid_view;
-    MyAdapter adapter;
+public class MainActivity extends AppCompatActivity implements Loader.OnLoadCompleteListener<Cursor> {
+    private GridView mGridView;
+    private GridViewAdapter mAdapter;
+    private DataBaseHelper db = new DataBaseHelper(MainActivity.this);
+    private SQLiteDatabase mReadableDB;
+    private SQLiteDatabase mWritableDB;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,31 +40,37 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        grid_view = (GridView) findViewById(R.id.grid_view);
+        mGridView = (GridView) findViewById(R.id.grid_view);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
+        mReadableDB = db.getReadableDatabase();
+        mWritableDB = db.getWritableDatabase();
+        mAdapter = new GridViewAdapter(this);
+        mGridView.setAdapter(mAdapter);
+        mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                InsistInfo item = mAdapter.getListItemByIndex(position);
+                item.setDayNow(item.getDayNow()+1);
+                ContentValues values = new ContentValues();
+                values.put(DataBaseHelper.DAY_NOW,item.getDayNow());
+                if(item.getDayNow()>item.getDayLongest()){
+                    item.setDayLongest(item.getDayLongest()+1);
+                    values.put(DataBaseHelper.DAY_LONGEST,item.getDayLongest());
+                }
+                mWritableDB.update(DataBaseHelper.TABLE_NAME,values,DataBaseHelper._ID+"=?",new String[]{String.valueOf(item.getId())});
+                mAdapter.notifyDataSetChanged();
+            }
+        });
 
-        if(adapter == null) {
-            adapter = new MyAdapter(this);
-        }
-        grid_view.setAdapter(adapter);
-        adapter.notifyDataSetChanged();
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//                        .setAction("Action", null).show();
-
                 AlertDialog dialog = createDialog();
                 dialog.show();
-
-//                adapter.add("wode");
-//                adapter.notifyDataSetChanged();
-
             }
         });
+        new InfoLoadTask().execute();
     }
 
     private AlertDialog createDialog(){
@@ -69,11 +84,16 @@ public class MainActivity extends AppCompatActivity {
                 .setPositiveButton(R.string.create, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        adapter.add(et_title.getText().toString());
-                        adapter.notifyDataSetChanged();
+                        InsistInfo item = new InsistInfo();
+                        item.setTitle(et_title.getText().toString());
+                        ContentValues values = new ContentValues();
+                        values.put(DataBaseHelper.TITLE,et_title.getText().toString());
+                        mWritableDB.insert(DataBaseHelper.TABLE_NAME,null,values);
+                        mAdapter.add(item);
+                        mAdapter.notifyDataSetChanged();
                     }
                 })
-                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
@@ -81,6 +101,11 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .create();
         return dialog;
+    }
+
+    @Override
+    public void onLoadComplete(Loader<Cursor> loader, Cursor data) {
+
     }
 
     private class TypeSpinnerAdapter extends BaseAdapter{
@@ -107,6 +132,36 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
     }
+
+    public class InfoLoadTask extends AsyncTask<Void,InsistInfo,Integer> {
+
+
+        @Override
+        protected Integer doInBackground(Void... params) {
+            Cursor cursor = mReadableDB.query(DataBaseHelper.TABLE_NAME,
+                    new String[]{DataBaseHelper._ID,
+                            DataBaseHelper.TITLE,
+                            DataBaseHelper.TYPE,
+                            DataBaseHelper.DAY_LONGEST,
+                            DataBaseHelper.DAY_NOW},
+                    null, null, null, null, "_id asc");
+            InsistInfo item;
+            int count = 0;
+            while(cursor.moveToNext()){
+                item = new InsistInfo();
+                item.setId(cursor.getInt(cursor.getColumnIndex(DataBaseHelper._ID)));
+                item.setTitle(cursor.getString(cursor.getColumnIndex(DataBaseHelper.TITLE)));
+                item.setType(cursor.getInt(cursor.getColumnIndex(DataBaseHelper.TYPE)));
+                item.setDayLongest(cursor.getInt(cursor.getColumnIndex(DataBaseHelper.DAY_LONGEST)));
+                item.setDayNow(cursor.getInt(cursor.getColumnIndex(DataBaseHelper.DAY_NOW)));
+                mAdapter.add(item);
+                mAdapter.notifyDataSetChanged();
+                count++;
+            }
+            return count;
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

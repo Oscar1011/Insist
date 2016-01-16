@@ -5,36 +5,36 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.android.shengbx.insist.sql.InsistInfo;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.Inflater;
 
 /**
  * Created by shengbx on 12/25/15.
  */
-public class MyAdapter extends BaseAdapter {
+public class GridViewAdapter extends BaseAdapter {
 
     private Context mContext;
     LayoutInflater inflater;
-    private List<String> mTitleList = new ArrayList<>();
+    private List<InsistInfo> mInistList = new ArrayList<>();
 
-    public MyAdapter(Context context) {
+    public GridViewAdapter(Context context) {
         super();
         mContext = context;
         inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
-    public void add(String title){
-        mTitleList.add(title);
+    public void add(InsistInfo item){
+        mInistList.add(item);
     }
 
     @Override
     public int getCount() {
-        return mTitleList.size();
+        return mInistList.size();
     }
 
     @Override
@@ -55,23 +55,31 @@ public class MyAdapter extends BaseAdapter {
         if(convertView == null){
             holder = new Holder();
             convertView = inflater.inflate(R.layout.grid_item,parent,false);
-            holder.iv = (ImageView) convertView.findViewById(R.id.icon);
-            holder.tv = (TextView) convertView.findViewById(R.id.title);
+            holder.icon = (ImageView) convertView.findViewById(R.id.icon);
+            holder.title = (TextView) convertView.findViewById(R.id.title);
+            holder.insist_days = (TextView) convertView.findViewById(R.id.insist_days);
             convertView.setTag(holder);
         }else{
             holder = (Holder) convertView.getTag();
-            holder.iv = (ImageView) convertView.findViewById(R.id.icon);
-            holder.tv = (TextView) convertView.findViewById(R.id.title);
+//            holder.icon = (ImageView) convertView.findViewById(R.id.icon);
+//            holder.title = (TextView) convertView.findViewById(R.id.title);
+//            holder.insist_days = (TextView) convertView.findViewById(R.id.insist_days);
         }
 
-        holder.iv.setImageResource(R.drawable.icon);
-        holder.tv.setText(mTitleList.get(position));
+        holder.icon.setImageResource(R.drawable.icon);
+        holder.title.setText(mInistList.get(position).getTitle());
+        holder.insist_days.setText(mContext.getString(R.string.insist_days,mInistList.get(position).getDayNow()));
         return convertView;
     }
 
+    public InsistInfo getListItemByIndex(int index){
+        return mInistList.get(index);
+    }
+
     class Holder{
-        ImageView iv;
-        TextView tv;
+        ImageView icon;
+        TextView title;
+        TextView insist_days;
     }
 
 }
