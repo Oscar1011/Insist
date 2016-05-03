@@ -1,17 +1,23 @@
 package com.android.shengbx.insist;
 
 import android.app.AlertDialog;
+import android.app.usage.NetworkStatsManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Loader;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyManager;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -22,10 +28,13 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.shengbx.insist.sql.DataBaseHelper;
 import com.android.shengbx.insist.sql.InsistInfo;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements Loader.OnLoadCompleteListener<Cursor> {
     private GridView mGridView;
@@ -79,21 +88,28 @@ public class MainActivity extends AppCompatActivity implements Loader.OnLoadComp
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         final View v = inflater.inflate(R.layout.dialog,null);
         final EditText et_title = (EditText) v.findViewById(R.id.title_edit);
-        Spinner sp_type = (Spinner) v.findViewById(R.id.type_spinner);
-        sp_type.setAdapter(new TypeSpinnerAdapter());
+        final Spinner sp_type = (Spinner) v.findViewById(R.id.type_spinner);
+        final TypeSpinnerAdapter adapter = new TypeSpinnerAdapter();
+        sp_type.setAdapter(adapter);
         AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
                 .setView(v)
+                .setTitle("创建新的坚持日")
                 .setPositiveButton(R.string.create, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         InsistInfo item = new InsistInfo();
                         item.setTitle(et_title.getText().toString());
                         ContentValues values = new ContentValues();
+                        values.put(DataBaseHelper.TYPE, (String) sp_type.getSelectedItem());
                         values.put(DataBaseHelper.TITLE, et_title.getText().toString());
                         long id = mWritableDB.insert(DataBaseHelper.TABLE_NAME, null, values);
-                        item.setId(id);
-                        mAdapter.add(item);
-                        mAdapter.notifyDataSetChanged();
+                        if (id > 0) {
+                            item.setId(id);
+                            mAdapter.add(item);
+                            mAdapter.notifyDataSetChanged();
+                        } else {
+                            Toast.makeText(getApplicationContext(), "失败", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -111,18 +127,21 @@ public class MainActivity extends AppCompatActivity implements Loader.OnLoadComp
 
     }
 
+
     private class TypeSpinnerAdapter extends BaseAdapter{
 
-
+        String[] a = new String[]{
+          "运动","学习"
+        };
 
         @Override
         public int getCount() {
-            return 0;
+            return a.length;
         }
 
         @Override
         public Object getItem(int position) {
-            return null;
+            return a[position];
         }
 
         @Override
@@ -132,7 +151,9 @@ public class MainActivity extends AppCompatActivity implements Loader.OnLoadComp
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            return null;
+            TextView tv = new TextView(getApplicationContext());
+            tv.setText(a[position]);
+            return tv;
         }
     }
 
